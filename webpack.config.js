@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import CopyWebpackPlugin from 'copy-webpack-plugin'
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
+// import {GenerateSW} from 'workbox-webpack-plugin';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -91,7 +92,11 @@ const dev = {
     compress: true,
     // Only update what has changed on hot reload
     hot: true,
-    port: 3000
+    port: 3000,
+
+  },
+  experiments: {
+    topLevelAwait: true
   },
 
   plugins: [

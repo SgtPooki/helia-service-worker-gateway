@@ -1,9 +1,6 @@
 import React, { useState, useRef } from 'react';
 import type { Helia } from '@helia/interface'
-import { AddOptions, unixfs } from '@helia/unixfs'
-import { CID } from 'multiformats/cid'
 
-import { getHelia } from './get-helia.ts'
 import ipfsLogo from './ipfs-logo.svg'
 import Form from './form';
 
@@ -20,9 +17,15 @@ interface OutputLine {
   id: string
 }
 
+window.addEventListener('message', (event) => {
+  if (event.data.source === 'helia') {
+    console.log('received message from helia service worker:', )
+  }
+}, false);
+
 function App() {
   const [output, setOutput] = useState<OutputLine[]>([]);
-  const [helia, setHelia] = useState<Helia | null>(null);
+  // const [helia, setHelia] = useState<Helia | null>(null);
   const [fileCid, setFileCid] = useState('');
 
 
@@ -45,89 +48,7 @@ function App() {
     terminalEl.current?.scroll?.({ top: terminalEl.current?.scrollHeight, behavior: 'smooth' })
   }
 
-  // const store = async (name, content) => {
-  //   let node: Helia | null = helia;
 
-  //   if (!helia) {
-  //     showStatus('Creating Helia node...', COLORS.active)
-
-  //     node = await getHelia()
-
-  //     setHelia(node)
-  //   }
-
-  //   if (node == null) {
-  //     throw new Error('Helia node is not available')
-  //   }
-
-  //   const peerId = node.libp2p.peerId
-  //   console.log(peerId)
-  //   showStatus(`My ID is ${peerId}`, COLORS.active, peerId.toString())
-
-  //   const encoder = new TextEncoder()
-
-  //   // const fileToAdd = {
-  //   //   path: `${name}`,
-  //   //   content: encoder.encode(content)
-  //   // }
-
-  //   const fs = unixfs(node)
-
-  //   showStatus(`Adding file ${fileToAdd.path}...`, COLORS.active)
-  //   const cid = await fs.addFile(fileToAdd, node.blockstore as Partial<AddOptions>)
-
-  //   showStatus(`Added to ${cid}`, COLORS.success, cid.toString())
-  //   showStatus('Reading file...', COLORS.active)
-  //   const decoder = new TextDecoder()
-  //   let text = ''
-
-  //   for await (const chunk of fs.cat(cid)) {
-  //     text += decoder.decode(chunk, {
-  //       stream: true
-  //     })
-  //   }
-
-  //   showStatus(`\u2514\u2500 ${name} ${text}`)
-  //   showStatus(`Preview: https://ipfs.io/ipfs/${cid}`, COLORS.success)
-  // }
-
-  const getFile = async (fileCid) => {
-    let node = helia;
-
-    if (!helia || node == null) {
-      showStatus('Creating Helia node...', COLORS.active)
-
-      node = await getHelia()
-
-      globalThis.helia = node
-      setHelia(node)
-    }
-
-    // if (node == null) {
-    //   throw new Error('Helia node is not available')
-    // }
-
-
-    const peerId = node.libp2p.peerId
-    console.log(peerId)
-    showStatus(`My ID is ${peerId}`, COLORS.active, peerId.toString())
-
-    const fs = unixfs(node)
-    const cid = CID.parse(fileCid)
-
-    showStatus(`Reading UnixFS text file ${cid}...`, COLORS.active)
-    const decoder = new TextDecoder()
-    let text = ''
-
-    for await (const chunk of fs.cat(cid)) {
-      text += decoder.decode(chunk, {
-        stream: true
-      })
-    }
-
-    showStatus(`\u2514\u2500 CID: ${cid}`)
-    showStatus(`${text}`, COLORS.success)
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -136,8 +57,12 @@ function App() {
       if (fileCid == null || fileCid.trim() === '') {
         throw new Error('File CID is missing...')
       }
+      navigator.serviceWorker?.controller?.postMessage(fileCid);
 
-      await getFile(fileCid)
+
+      // const output = await fetch(`/ipfs/${fileCid}`, { method: 'GET' })
+      // console.log(`output: `, output);
+      // console.log(`output: `, output.text());
     } catch (err) {
       showStatus((err as Error)?.message, COLORS.error)
     }

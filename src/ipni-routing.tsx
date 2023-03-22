@@ -95,8 +95,8 @@ class IpniRouting implements ContentRouting, Startable {
         if (event.Metadata != "gBI=") {
             continue
         }
-        
-        console.log(event)
+
+        console.log('found providers: ', event)
         yield this.mapEvent(event)
       }
     } catch (err) {
