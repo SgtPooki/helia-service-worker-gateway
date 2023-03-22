@@ -36,38 +36,38 @@ if (WB_MANIFEST) {
 }
 
 // Static Assets
-registerRoute(
-  /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
-  new CacheFirst({
-    cacheName: 'static-assets',
-    matchOptions: {
-      ignoreVary: true
-    },
-    plugins: [
-      new ExpirationPlugin(DEFAULT_EXPIRATION_OPTIONS),
-    ],
-  }),
-  'GET'
-);
+// registerRoute(
+//   /\.(?:jpg|jpeg|gif|png|svg|ico|webp)$/i,
+//   new CacheFirst({
+//     cacheName: 'static-assets',
+//     matchOptions: {
+//       ignoreVary: true
+//     },
+//     plugins: [
+//       new ExpirationPlugin(DEFAULT_EXPIRATION_OPTIONS),
+//     ],
+//   }),
+//   'GET'
+// );
 
-// Static Assets JS and CSS
-registerRoute(
-  /\.(?:css|js)$/i,
-  new StaleWhileRevalidate({
-    cacheName: 'static-assets',
-    matchOptions: {
-      ignoreVary: true
-    },
-    plugins: [
-      new ExpirationPlugin({
-        ...DEFAULT_EXPIRATION_OPTIONS,
-        // Making sure we don't cache the assets for more than 1 hour. In case we need to update them.
-        maxAgeSeconds: 60 * 60 * 24
-      }),
-    ],
-  }),
-  'GET'
-);
+// // Static Assets JS and CSS
+// registerRoute(
+//   /\.(?:css|js)$/i,
+//   new StaleWhileRevalidate({
+//     cacheName: 'static-assets',
+//     matchOptions: {
+//       ignoreVary: true
+//     },
+//     plugins: [
+//       new ExpirationPlugin({
+//         ...DEFAULT_EXPIRATION_OPTIONS,
+//         // Making sure we don't cache the assets for more than 1 hour. In case we need to update them.
+//         maxAgeSeconds: 60 * 60 * 24
+//       }),
+//     ],
+//   }),
+//   'GET'
+// );
 
 
 
