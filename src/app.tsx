@@ -1,8 +1,17 @@
-import React, { useState, useRef } from 'react';
-import type { Helia } from '@helia/interface'
+import React, { useState, useRef, useEffect } from 'react';
 
 import ipfsLogo from './ipfs-logo.svg'
-import Form from './form';
+import Form from './form.tsx';
+import { HeliaServiceWorkerActions, sendHeliaServiceWorkerMessage } from './lib/swActions.ts';
+import {multiaddr, protocols} from '@multiformats/multiaddr'
+
+import { getHelia } from './get-helia.ts';
+import { connectAndGetFile } from './lib/connectAndGetFile.ts';
+
+// console.log(`multiaddr: `, multiaddr);
+(window as any).multiaddr = multiaddr;
+
+(window as any).protocols = protocols;
 
 enum COLORS {
   default = '#fff',
@@ -17,22 +26,31 @@ interface OutputLine {
   id: string
 }
 
-window.addEventListener('message', (event) => {
-  if (event.data.source === 'helia') {
-    console.log('received message from helia service worker:', )
+window.addEventListener('message', ({data}) => {
+  if (data.source === 'helia') {
+    console.log('received message from helia service worker:')
+    console.log('SW action: ', data.action)
+    console.log('SW data: ', data.data)
   }
 }, false);
 
 function App() {
   const [output, setOutput] = useState<OutputLine[]>([]);
-  // const [helia, setHelia] = useState<Helia | null>(null);
-  const [fileCid, setFileCid] = useState('');
+  const [fileCid, setFileCid] = useState(localStorage.getItem('helia-service-worker-gateway.forms.fileCid') ?? '');
+  const [localMultiaddr, setLocalMultiaddr] = useState(localStorage.getItem('helia-service-worker-gateway.forms.localMultiaddr') ?? '');
+  const [useServiceWorker, setUseServiceWorker] = useState(localStorage.getItem('helia-service-worker-gateway.forms.useServiceWorker') === 'true' ?? false);
 
+  useEffect(() => {
+    localStorage.setItem('helia-service-worker-gateway.forms.fileCid', fileCid)
+  }, [fileCid])
+  useEffect(() => {
+    localStorage.setItem('helia-service-worker-gateway.forms.localMultiaddr', localMultiaddr)
+  }, [localMultiaddr])
+  useEffect(() => {
+    localStorage.setItem('helia-service-worker-gateway.forms.useServiceWorker', useServiceWorker.toString())
+  }, [useServiceWorker])
 
   const terminalEl = useRef<HTMLDivElement>(null);
-
-
-
 
   const showStatus = (text: OutputLine['content'], color: OutputLine['color'] = COLORS.default, id: OutputLine['id'] = '') => {
     setOutput((prev: OutputLine[]) => {
@@ -48,8 +66,6 @@ function App() {
     terminalEl.current?.scroll?.({ top: terminalEl.current?.scrollHeight, behavior: 'smooth' })
   }
 
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -57,8 +73,21 @@ function App() {
       if (fileCid == null || fileCid.trim() === '') {
         throw new Error('File CID is missing...')
       }
-      navigator.serviceWorker?.controller?.postMessage(fileCid);
 
+      if (useServiceWorker) {
+
+        sendHeliaServiceWorkerMessage({ action: HeliaServiceWorkerActions.GET_FILE, data: { fileCid, localMultiaddr } })
+      } else {
+        await connectAndGetFile({
+          localMultiaddr,
+          fileCid,
+          helia: await getHelia(),
+          action: HeliaServiceWorkerActions.GET_FILE,
+          cb: async ({ fileContent, action }) => {
+            console.log('non-SW fileContent: ', fileContent);
+          }
+        })
+      }
 
       // const output = await fetch(`/ipfs/${fileCid}`, { method: 'GET' })
       // console.log(`output: `, output);
@@ -78,7 +107,15 @@ function App() {
 
       <main className="pa4-l bg-snow mw7 mv5 center pa4">
         <h1 className="pa0 f2 ma0 mb4 aqua tc">Fetch content from IPFS using Helia</h1>
-        <Form handleSubmit={handleSubmit} fileCid={fileCid} setFileCid={setFileCid} />
+        <Form
+          handleSubmit={handleSubmit}
+          fileCid={fileCid}
+          setFileCid={setFileCid}
+          localMultiaddr={localMultiaddr}
+          setLocalMultiaddr={setLocalMultiaddr}
+          useServiceWorker={useServiceWorker}
+          setUseServiceWorker={setUseServiceWorker}
+        />
 
         <h3>Output</h3>
 
