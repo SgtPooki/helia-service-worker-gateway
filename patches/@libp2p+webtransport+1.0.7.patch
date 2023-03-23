@@ -1,0 +1,13 @@
+diff --git a/node_modules/@libp2p/webtransport/dist/src/index.js b/node_modules/@libp2p/webtransport/dist/src/index.js
+index 5043a2b..1e31d3c 100644
+--- a/node_modules/@libp2p/webtransport/dist/src/index.js
++++ b/node_modules/@libp2p/webtransport/dist/src/index.js
+@@ -255,7 +255,7 @@ class WebTransport {
+         if (certhashes.length === 0) {
+             throw new Error('Expected multiaddr to contain certhashes');
+         }
+-        const wt = new window.WebTransport(`${url}/.well-known/libp2p-webtransport?type=noise`, {
++        const wt = new globalThis.WebTransport(`${url}/.well-known/libp2p-webtransport?type=noise`, {
+             serverCertificateHashes: certhashes.map(certhash => ({
+                 algorithm: 'sha-256',
+                 value: certhash.digest
