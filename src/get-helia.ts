@@ -3,6 +3,7 @@ import type { Helia } from '@helia/interface'
 import { type Libp2pOptions, createLibp2p } from 'libp2p'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
+import { mplex } from '@libp2p/mplex'
 import { webSockets } from '@libp2p/websockets'
 import { webTransport } from '@libp2p/webtransport'
 import { MemoryBlockstore } from 'blockstore-core'
@@ -32,7 +33,7 @@ export async function getHelia (): Promise<Helia> {
     port: 443,
     host: 'node3.delegate.ipfs.io'
   })
-  const validTransports = ['/ws', '/wss', '/webtransport']
+  // const validTransports = ['/ws', '/wss', '/webtransport']
   // libp2p is the networking layer that underpins Helia
   const libp2p = await createLibp2p({
     datastore: datastore as unknown as Libp2pOptions['datastore'],
@@ -44,33 +45,35 @@ export async function getHelia (): Promise<Helia> {
     ],
     streamMuxers: [
       yamux()
+      // mplex()
     ],
     peerRouters: [delegatedPeerRouting(delegatedClient)],
     // contentRouters: [ipniRouting('https', 'indexstar.prod.cid.contact', '443'), delegatedContentRouting(delegatedClient)],
-    contentRouters: [ipniRouting('https', 'cid.contact', '443'), delegatedContentRouting(delegatedClient)],
+    contentRouters: [ipniRouting('https', 'cid.contact', '443')],
     /**
      * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#configuring-connection-manager
      */
     connectionManager: {
       // Auto connect to discovered peers (limited by ConnectionManager minConnections)
       //  maxConnections: Infinity,
+      maxConnections: Infinity,
       minConnections: 1,
-      pollInterval: 2000,
-      autoDial: true,
-      addressSorter: (addressA, addressB) => {
-        // Sort addresses by valid browser protocols first
-        const addressAString = addressA.multiaddr.toString()
-        const addressBString = addressB.multiaddr.toString()
-        const addressAIsValidBrowserProtocol = validTransports.some((transport) => addressAString.includes(transport))
-        const addressBIsValidBrowserProtocol = validTransports.some((transport) => addressBString.includes(transport))
-        if (addressAIsValidBrowserProtocol && !addressBIsValidBrowserProtocol) {
-          return -1
-        }
-        if (!addressAIsValidBrowserProtocol && addressBIsValidBrowserProtocol) {
-          return 1
-        }
-        return 0
-      }
+      pollInterval: 2000
+      // autoDial: true,
+      // addressSorter: (addressA, addressB) => {
+      //   // Sort addresses by valid browser protocols first
+      //   const addressAString = addressA.multiaddr.toString()
+      //   const addressBString = addressB.multiaddr.toString()
+      //   const addressAIsValidBrowserProtocol = validTransports.some((transport) => addressAString.includes(transport))
+      //   const addressBIsValidBrowserProtocol = validTransports.some((transport) => addressBString.includes(transport))
+      //   if (addressAIsValidBrowserProtocol && !addressBIsValidBrowserProtocol) {
+      //     return -1
+      //   }
+      //   if (!addressAIsValidBrowserProtocol && addressBIsValidBrowserProtocol) {
+      //     return 1
+      //   }
+      //   return 0
+      // }
       //  maxAddrsToDial: 100,
     },
     /**
@@ -78,26 +81,26 @@ export async function getHelia (): Promise<Helia> {
      */
     peerRouting: { // Peer routing configuration
       refreshManager: { // Refresh known and connected closest peers
-        enabled: true, // Should find the closest peers.
-        interval: 15000, // Interval for getting the new for closest peers of 10min
-        bootDelay: 2000 // Delay for the initial query for closest peers
+        enabled: false, // Should find the closest peers.
+        interval: 6e5, // Interval for getting the new for closest peers of 10min
+        bootDelay: 10e3 // Delay for the initial query for closest peers
       }
-    },
+    }
 
     /**
      * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#customizing-peer-discovery
      */
-    peerDiscovery: /** @type {import('libp2p').Libp2pOptions['peerDiscovery']} */([
-      bootstrap({
-        list: [
-          '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
-          '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
-          '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
-          '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt',
-          '/dns4/elastic.dag.house/tcp/443/wss/p2p/bafzbeibhqavlasjc7dvbiopygwncnrtvjd2xmryk5laib7zyjor6kf3avm'
-        ]
-      })
-    ])
+    // peerDiscovery: /** @type {import('libp2p').Libp2pOptions['peerDiscovery']} */([
+    //   bootstrap({
+    //     list: [
+    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
+    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
+    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt',
+    //       '/dns4/elastic.dag.house/tcp/443/wss/p2p/bafzbeibhqavlasjc7dvbiopygwncnrtvjd2xmryk5laib7zyjor6kf3avm'
+    //     ]
+    //   })
+    // ])
   })
 
   libp2p.addEventListener('peer:discovery', (evt) => {

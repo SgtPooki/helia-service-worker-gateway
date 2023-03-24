@@ -6,10 +6,10 @@ import { connectAndGetFile } from '../lib/connectAndGetFile.ts'
 import { type ChannelMessage, HeliaServiceWorkerCommsChannel } from '../lib/channel.ts'
 
 // localStorage.setItem doesn't work in service workers
-// import debug from 'debug'
+import debug from 'debug'
 // debug.enable('libp2p:websockets,libp2p:webtransport,libp2p:kad-dht,libp2p:dialer*,libp2p:connection-manager')
 // debug.enable('libp2p:*:error')
-// debug.enable('libp2p:*:error,-*:trace')
+debug.enable('libp2p:*:error,libp2p:dialer*,-*:trace')
 
 declare let self: ServiceWorkerGlobalScope
 
