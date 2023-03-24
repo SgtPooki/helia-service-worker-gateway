@@ -8,12 +8,12 @@ import type { CID } from 'multiformats/cid'
 import { peerIdFromString } from '@libp2p/peer-id'
 import { multiaddr } from '@multiformats/multiaddr'
 
-import type { HTTPClientExtraOptions, Multiaddr, ReframeV1ResponseItem } from './types.ts'
+import type { CustomRoutingEventType, HTTPClientExtraOptions, Multiaddr } from './types.ts'
 
 /**
  * An implementation of content routing, using a delegated peer
  */
-export class CustomRouting implements ContentRouting, Startable {
+export class CustomRouting<T extends CustomRoutingEventType> implements ContentRouting, Startable {
   protected readonly DEFAULT_TIMEOUT = 30e3 // 30 second default
   protected readonly CONCURRENT_HTTP_REQUESTS = 4
   protected readonly clientUrl: URL
@@ -53,10 +53,25 @@ export class CustomRouting implements ContentRouting, Startable {
     this.started = false
   }
 
-  mapEvent (event: ReframeV1ResponseItem): PeerInfo {
-    const peer = peerIdFromString(event.ID)
+  /**
+   * To be implemented by the subclass, helps return proper peerId from events that may be different shapes
+   */
+  getPeerIdFromEvent (event: T): string {
+    throw new Error('getPeerIdFromEvent not implemented.')
+  }
+
+  /**
+   * To be implemented by the subclass, helps return MultiAddrs from events that may be different shapes
+   */
+  getMultiaddrsFromEvent (event: T): Multiaddr[] {
+    throw new Error('getMultiaddrsFromEvent not implemented.')
+  }
+
+  mapEvent (event: T): PeerInfo {
+    console.log('event: ', event)
+    const peer = peerIdFromString(this.getPeerIdFromEvent(event))
     const ma: Multiaddr[] = []
-    for (const strAddr of event.Addrs) {
+    for (const strAddr of this.getMultiaddrsFromEvent(event)) {
       const addr = multiaddr(strAddr)
       ma.push(addr)
     }

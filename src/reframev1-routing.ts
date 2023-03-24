@@ -7,7 +7,7 @@ import type { PeerInfo } from '@libp2p/interface-peer-info'
 import type { CID } from 'multiformats/cid'
 import HTTP from 'ipfs-utils/src/http.js'
 
-import type { HTTPClientExtraOptions, ReframeV1ResponseItem } from './types.ts'
+import type { HTTPClientExtraOptions, LibP2pComponents, Multiaddr, ReframeV1ResponseItem } from './types.ts'
 import { AbortSignalGuard } from './typeGuards.ts'
 import { CustomRouting } from './CustomRouting.ts'
 
@@ -16,7 +16,7 @@ const log = logger('libp2p:delegated-content-routing')
 /**
  * An implementation of content routing, using a delegated peer
  */
-class ReframeV1Routing extends CustomRouting {
+class ReframeV1Routing extends CustomRouting<ReframeV1ResponseItem> {
   /**
    * Create a new DelegatedContentRouting instance
    */
@@ -24,6 +24,14 @@ class ReframeV1Routing extends CustomRouting {
     super(protocol, host, port)
 
     log(`enabled IPNI routing via ${protocol}://${host}:${port}`)
+  }
+
+  getPeerIdFromEvent (event: ReframeV1ResponseItem): string {
+    return event.ID
+  }
+
+  getMultiaddrsFromEvent (event: ReframeV1ResponseItem): Multiaddr[] {
+    return event.Addrs
   }
 
   /**
@@ -71,6 +79,6 @@ class ReframeV1Routing extends CustomRouting {
   }
 }
 
-export function reframeV1Routing (protocol: string, host: string, port: string): (components?: unknown[]) => ContentRouting {
+export function reframeV1Routing (protocol: string, host: string, port: string): (components?: LibP2pComponents) => ContentRouting {
   return () => new ReframeV1Routing(protocol, host, port)
 }

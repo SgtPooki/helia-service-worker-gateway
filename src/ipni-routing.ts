@@ -7,7 +7,7 @@ import type { PeerInfo } from '@libp2p/interface-peer-info'
 import type { CID } from 'multiformats/cid'
 import HTTP from 'ipfs-utils/src/http.js'
 
-import type { HTTPClientExtraOptions } from './types.ts'
+import type { HTTPClientExtraOptions, IpniResponseItem, LibP2pComponents, Multiaddr } from './types.ts'
 import { CustomRouting } from './CustomRouting'
 
 const log = logger('libp2p:delegated-content-routing')
@@ -15,7 +15,7 @@ const log = logger('libp2p:delegated-content-routing')
 /**
  * An implementation of content routing, using a delegated peer
  */
-class IpniRouting extends CustomRouting {
+class IpniRouting extends CustomRouting<IpniResponseItem> {
   /**
    * Create a new DelegatedContentRouting instance
    */
@@ -23,6 +23,14 @@ class IpniRouting extends CustomRouting {
     super(protocol, host, port)
 
     log(`enabled IPNI routing via ${protocol}://${host}:${port}`)
+  }
+
+  getPeerIdFromEvent (event: IpniResponseItem): string {
+    return event.Provider.ID
+  }
+
+  getMultiaddrsFromEvent (event: IpniResponseItem): Multiaddr[] {
+    return event.Provider.Addrs
   }
 
   /**
@@ -70,6 +78,6 @@ class IpniRouting extends CustomRouting {
   }
 }
 
-export function ipniRouting (protocol: string, host: string, port: string): (components?: unknown[]) => ContentRouting {
+export function ipniRouting (protocol: string, host: string, port: string): (components?: LibP2pComponents) => ContentRouting {
   return () => new IpniRouting(protocol, host, port)
 }
