@@ -46,6 +46,7 @@ export async function getHelia (): Promise<Helia> {
       yamux()
     ],
     peerRouters: [delegatedPeerRouting(delegatedClient)],
+    // contentRouters: [ipniRouting('https', 'indexstar.prod.cid.contact', '443'), delegatedContentRouting(delegatedClient)],
     contentRouters: [ipniRouting('https', 'cid.contact', '443'), delegatedContentRouting(delegatedClient)],
     /**
      * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#configuring-connection-manager

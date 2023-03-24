@@ -3,7 +3,7 @@ import { clientsClaim } from 'workbox-core'
 import { getHelia } from '../get-helia.ts'
 import { ChannelActions } from '../lib/common.ts'
 import { connectAndGetFile } from '../lib/connectAndGetFile.ts'
-import { HeliaServiceWorkerCommsChannel } from '../lib/channel'
+import { type ChannelMessage, HeliaServiceWorkerCommsChannel } from '../lib/channel.ts'
 
 // localStorage.setItem doesn't work in service workers
 // import debug from 'debug'
@@ -29,11 +29,14 @@ self.oninstall = async (event) => {
 
 // })();
 
-channel.onmessagefrom('WINDOW', async (event) => {
+channel.onmessagefrom('WINDOW', async (event: MessageEvent<ChannelMessage<'WINDOW', { localMultiaddr?: string, fileCid?: string }>>) => {
   const { data } = event
   const { localMultiaddr, fileCid } = data.data
   switch (data.action) {
     case ChannelActions.GET_FILE:
+      if (fileCid == null) {
+        throw new Error('No fileCid provided')
+      }
       await connectAndGetFile({
         channel,
         localMultiaddr,

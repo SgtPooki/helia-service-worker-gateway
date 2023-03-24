@@ -23,7 +23,7 @@ type NotSourceUser<T extends ChannelUserValues> = T extends ChannelUsers
   ? (Exclude<ChannelUsers, T> | `${Exclude<ChannelUsers, T>}`)
   : Exclude<ChannelUsers, T> | keyof Omit<typeof ChannelUsers, T>
 
-interface ChannelMessage<Source extends ChannelUserValues, Data = unknown> {
+export interface ChannelMessage<Source extends ChannelUserValues, Data = Record<string, unknown>> {
   source: Source
   target?: ChannelUserValues
   action: ChannelActions | keyof typeof ChannelActions | 'TEST'

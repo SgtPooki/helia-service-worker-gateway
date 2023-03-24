@@ -8,7 +8,7 @@ import type { ChannelUserValues, HeliaServiceWorkerCommsChannel } from './channe
 
 interface ConnectAndGetFileOptions {
   channel: HeliaServiceWorkerCommsChannel<ChannelUserValues>
-  localMultiaddr: string
+  localMultiaddr?: string
   fileCid: string
   helia: Awaited<ReturnType<typeof createHelia>>
   action: ChannelActions | keyof typeof ChannelActions
@@ -67,4 +67,5 @@ export async function connectAndGetFile ({ channel, localMultiaddr, fileCid, hel
   if (localConnection != null) {
     await localConnection.close()
   }
+  await helia.stop()
 }
