@@ -1,9 +1,4 @@
 module.exports = {
-  // extends: 'standard-with-typescript',
-  // parserOptions: {
-  //   project: './tsconfig.json'
-  // }
-
   'root': true,
   'extends': [
       'eslint:recommended',
@@ -18,13 +13,6 @@ module.exports = {
   'rules': {
     "@typescript-eslint/restrict-template-expressions": "off",
     "eqeqeq": ["error", "always", {"null": "ignore"}],
-      // '@typescript-eslint/strict-boolean-expressions': [
-      //     2,
-      //     {
-      //         'allowString' : false,
-      //         'allowNumber' : false
-      //     }
-      // ]
   },
   'ignorePatterns': ['src/**/*.test.ts', 'src/frontend/generated/*']
 }
