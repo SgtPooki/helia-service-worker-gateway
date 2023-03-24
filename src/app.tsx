@@ -2,18 +2,13 @@ import React, { useState, useRef, useEffect } from 'react'
 
 import ipfsLogo from './ipfs-logo.svg'
 import Form from './form.tsx'
-import { ChannelActions } from './lib/common.ts'
 
+import { ChannelActions, COLORS } from './lib/common.ts'
 import { getHelia } from './get-helia.ts'
 import { connectAndGetFile } from './lib/connectAndGetFile.ts'
 import { HeliaServiceWorkerCommsChannel } from './lib/channel.ts'
-import { COLORS } from './lib/common'
-
-interface OutputLine {
-  content: string
-  color: COLORS
-  id: string
-}
+import TerminalOutput from './components/TerminalOutput.tsx'
+import type { OutputLine } from './components/types.ts'
 
 const channel = new HeliaServiceWorkerCommsChannel('WINDOW')
 
@@ -33,7 +28,7 @@ function App (): JSX.Element {
     localStorage.setItem('helia-service-worker-gateway.forms.useServiceWorker', useServiceWorker.toString())
   }, [useServiceWorker])
 
-  const terminalEl = useRef<HTMLDivElement>(null)
+  const terminalRef = useRef<HTMLDivElement>(null)
 
   const showStatus = (text: OutputLine['content'], color: OutputLine['color'] = COLORS.default, id: OutputLine['id'] = ''): void => {
     setOutput((prev: OutputLine[]) => {
@@ -45,8 +40,6 @@ function App (): JSX.Element {
         }
       ]
     })
-
-    terminalEl.current?.scroll?.({ top: terminalEl.current?.scrollHeight, behavior: 'smooth' })
   }
 
   const handleSubmit = async (e): Promise<void> => {
@@ -85,7 +78,11 @@ function App (): JSX.Element {
       console.log('received message:', data)
       switch (data.action) {
         case ChannelActions.SHOW_STATUS:
-          showStatus(`${data.source}: ${data.data.text}`, data.data.color, data.data.id)
+          if (data.data.text.trim() !== '') {
+            showStatus(`${data.source}: ${data.data.text}`, data.data.color, data.data.id)
+          } else {
+            showStatus('', data.data.color, data.data.id)
+          }
           break
         default:
           console.log(`SW action ${data.action} NOT_IMPLEMENTED yet...`)
@@ -118,15 +115,7 @@ function App (): JSX.Element {
 
         <div className='window'>
           <div className='header' />
-          <div id='terminal' className='terminal' ref={terminalEl}>
-            {output.length > 0 &&
-              <div id='output'>
-                {output.map((log, index) =>
-                  <p key={index} style={{ color: log.color }} id={log.id}>
-                    {log.content}
-                  </p>)}
-              </div>}
-          </div>
+          <TerminalOutput output={output} terminalRef={terminalRef} />
         </div>
       </main>
     </>

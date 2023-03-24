@@ -25,8 +25,7 @@ export async function connectAndGetFile ({ channel, localMultiaddr, fileCid, hel
         action: 'SHOW_STATUS',
         data: {
           text: `Dialing to local node at provided multiaddr ${ma}...`,
-          color: COLORS.active,
-          id: null
+          color: COLORS.active
         }
       })
       localConnection = await helia?.libp2p.dial(ma)
@@ -43,8 +42,7 @@ export async function connectAndGetFile ({ channel, localMultiaddr, fileCid, hel
         action: 'SHOW_STATUS',
         data: {
           text: `Error dialing local node: ${(e as Error)?.message}`,
-          color: COLORS.error,
-          id: null
+          color: COLORS.error
         }
       })
     }
@@ -53,8 +51,7 @@ export async function connectAndGetFile ({ channel, localMultiaddr, fileCid, hel
       action: 'SHOW_STATUS',
       data: {
         text: 'No local multiaddr provided, skipping dial to local node',
-        color: COLORS.default,
-        id: null
+        color: COLORS.default
       }
     })
   }
@@ -65,7 +62,44 @@ export async function connectAndGetFile ({ channel, localMultiaddr, fileCid, hel
     await cb({ fileContent, action })
   }
   if (localConnection != null) {
+    channel.postMessage({
+      action: 'SHOW_STATUS',
+      data: {
+        text: 'Closing connection to local node...',
+        color: COLORS.active
+      }
+    })
     await localConnection.close()
+    channel.postMessage({
+      action: 'SHOW_STATUS',
+      data: {
+        text: 'Connection to local node closed',
+        color: COLORS.success
+      }
+    })
   }
+
+  channel.postMessage({
+    action: 'SHOW_STATUS',
+    data: {
+      text: 'Stopping Helia...',
+      color: COLORS.active
+    }
+  })
   await helia.stop()
+  channel.postMessage({
+    action: 'SHOW_STATUS',
+    data: {
+      text: 'Helia stopped',
+      color: COLORS.success
+    }
+  })
+
+  // blank line to separate the output from the next
+  channel.postMessage({
+    action: 'SHOW_STATUS',
+    data: {
+      text: ''
+    }
+  })
 }
