@@ -1,57 +1,69 @@
-import type { Libp2p } from 'libp2p';
+import type { Libp2p } from 'libp2p'
 import { multiaddr } from '@multiformats/multiaddr'
-import type { createHelia } from 'helia';
-import { getFile } from './getFile';
-import type { ChannelActions } from './common.ts';
-import { COLORS } from './common.ts';
-import type { ChannelUserValues, HeliaServiceWorkerCommsChannel } from './channel.ts';
+import type { createHelia } from 'helia'
+import { getFile } from './getFile'
+import type { ChannelActions } from './common.ts'
+import { COLORS } from './common.ts'
+import type { ChannelUserValues, HeliaServiceWorkerCommsChannel } from './channel.ts'
 
 interface ConnectAndGetFileOptions {
-  channel: HeliaServiceWorkerCommsChannel<ChannelUserValues>,
-  localMultiaddr: string,
-  fileCid: string,
-  helia: Awaited<ReturnType<typeof createHelia>>,
-  action: ChannelActions | keyof typeof ChannelActions,
+  channel: HeliaServiceWorkerCommsChannel<ChannelUserValues>
+  localMultiaddr: string
+  fileCid: string
+  helia: Awaited<ReturnType<typeof createHelia>>
+  action: ChannelActions | keyof typeof ChannelActions
   cb?: (data: { fileContent: string, action: ChannelActions | keyof typeof ChannelActions }) => Promise<void>
 }
 
-
-export async function connectAndGetFile({ channel, localMultiaddr, fileCid, helia, cb, action }: ConnectAndGetFileOptions) {
+export async function connectAndGetFile ({ channel, localMultiaddr, fileCid, helia, cb, action }: ConnectAndGetFileOptions): Promise<void> {
   let localConnection: Awaited<ReturnType<Libp2p['dial']>> | undefined
-  if (localMultiaddr) {
+  if (localMultiaddr != null) {
     const ma = multiaddr(localMultiaddr)
     try {
-      channel.postMessage({ action: 'SHOW_STATUS', data: {
-        text: `Dialing to local node at provided multiaddr ${ma}...`,
-        color: COLORS.active,
-        id: null
-      }})
+      channel.postMessage({
+        action: 'SHOW_STATUS',
+        data: {
+          text: `Dialing to local node at provided multiaddr ${ma}...`,
+          color: COLORS.active,
+          id: null
+        }
+      })
       localConnection = await helia?.libp2p.dial(ma)
-      channel.postMessage({ action: 'SHOW_STATUS', data: {
-        text: `Connected to local node...`,
-        color: COLORS.success,
-        id: null
-      }})
+      channel.postMessage({
+        action: 'SHOW_STATUS',
+        data: {
+          text: 'Connected to local node...',
+          color: COLORS.success,
+          id: null
+        }
+      })
     } catch (e) {
-      channel.postMessage({ action: 'SHOW_STATUS', data: {
-        text: `Error dialing local node: ${(e as Error)?.message}`,
-        color: COLORS.error,
-        id: null
-      }})
+      channel.postMessage({
+        action: 'SHOW_STATUS',
+        data: {
+          text: `Error dialing local node: ${(e as Error)?.message}`,
+          color: COLORS.error,
+          id: null
+        }
+      })
     }
   } else {
-    channel.postMessage({ action: 'SHOW_STATUS', data: {
-      text: 'No local multiaddr provided, skipping dial to local node',
-      color: COLORS.default,
-      id: null
-    }})
+    channel.postMessage({
+      action: 'SHOW_STATUS',
+      data: {
+        text: 'No local multiaddr provided, skipping dial to local node',
+        color: COLORS.default,
+        id: null
+      }
+    })
   }
 
   const fileContent = await getFile({ fileCid, helia, channel })
   if (cb != null) {
-    await cb({fileContent, action})
+    // eslint-disable-next-line n/no-callback-literal
+    await cb({ fileContent, action })
   }
-  if (localConnection) {
-    localConnection.close
+  if (localConnection != null) {
+    await localConnection.close()
   }
 }

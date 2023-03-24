@@ -7,15 +7,16 @@ import type { PeerInfo } from '@libp2p/interface-peer-info'
 import type { CID } from 'multiformats/cid'
 import HTTP from 'ipfs-utils/src/http.js'
 
-import type { HTTPClientExtraOptions } from './types.ts'
-import { CustomRouting } from './CustomRouting'
+import type { HTTPClientExtraOptions, ReframeV1ResponseItem } from './types.ts'
+import { AbortSignalGuard } from './typeGuards.ts'
+import { CustomRouting } from './CustomRouting.ts'
 
 const log = logger('libp2p:delegated-content-routing')
 
 /**
  * An implementation of content routing, using a delegated peer
  */
-class IpniRouting extends CustomRouting {
+class ReframeV1Routing extends CustomRouting {
   /**
    * Create a new DelegatedContentRouting instance
    */
@@ -32,7 +33,7 @@ class IpniRouting extends CustomRouting {
    */
   async * findProviders (key: CID, options: HTTPClientExtraOptions & AbortOptions = {}): AsyncIterable<PeerInfo> {
     log('findProviders starts: %c', key)
-    options.signal = anySignal([this.abortController.signal].concat((options.signal != null) ? [options.signal] : []))
+    options.signal = anySignal([this.abortController.signal].concat(AbortSignalGuard(options.signal) ? [options.signal] : []))
     setTimeout(() => {
       this.abortController.abort('findProviders timed out')
     }, this.DEFAULT_TIMEOUT)
@@ -48,16 +49,16 @@ class IpniRouting extends CustomRouting {
     try {
       await onStart.promise
 
-      const resource = `${this.clientUrl}cid/${key.toString()}?cascade=ipfs-dht`
+      const resource = `${this.clientUrl}routing/v1/providers/${key.toString()}`
       const getOptions = { headers: { Accept: 'application/x-ndjson' }, signal: this.abortController.signal }
       const a = await HTTP.get(resource, getOptions)
-      const b = a.ndjson()
+      const b: AsyncGenerator<ReframeV1ResponseItem, unknown, unknown> = a.ndjson()
       for await (const event of b) {
-        if (event.Metadata !== 'gBI=') {
+        if (event.Protocol !== 'transport-bitswap' || event.Schema !== 'bitswap') {
           continue
         }
 
-        console.log('found providers: ', event)
+        console.log(event)
         yield this.mapEvent(event)
       }
     } catch (err) {
@@ -70,6 +71,6 @@ class IpniRouting extends CustomRouting {
   }
 }
 
-export function ipniRouting (protocol: string, host: string, port: string): (components?: unknown[]) => ContentRouting {
-  return () => new IpniRouting(protocol, host, port)
+export function reframeV1Routing (protocol: string, host: string, port: string): (components?: unknown[]) => ContentRouting {
+  return () => new ReframeV1Routing(protocol, host, port)
 }

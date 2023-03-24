@@ -1,6 +1,6 @@
-import { HeliaInit, createHelia } from 'helia'
+import { type HeliaInit, createHelia } from 'helia'
 import type { Helia } from '@helia/interface'
-import { Libp2pOptions, createLibp2p } from 'libp2p'
+import { type Libp2pOptions, createLibp2p } from 'libp2p'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { webSockets } from '@libp2p/websockets'
@@ -10,7 +10,7 @@ import { MemoryBlockstore } from 'blockstore-core'
 import { bootstrap } from '@libp2p/bootstrap'
 import { MemoryDatastore } from 'datastore-core'
 import { delegatedPeerRouting } from '@libp2p/delegated-peer-routing'
-import { create as kuboClient } from "kubo-rpc-client";
+import { create as kuboClient } from 'kubo-rpc-client'
 
 import { ipniRouting } from './ipni-routing.ts'
 import { delegatedContentRouting } from '@libp2p/delegated-content-routing'
@@ -28,9 +28,9 @@ export async function getHelia (): Promise<Helia> {
   // default is to use ipfs.io
   const delegatedClient = kuboClient({
     // use default api settings
-    protocol: "https",
+    protocol: 'https',
     port: 443,
-    host: "node3.delegate.ipfs.io",
+    host: 'node3.delegate.ipfs.io'
   })
   const validTransports = ['/ws', '/wss', '/webtransport']
   // libp2p is the networking layer that underpins Helia
@@ -46,17 +46,17 @@ export async function getHelia (): Promise<Helia> {
       yamux()
     ],
     peerRouters: [delegatedPeerRouting(delegatedClient)],
-    contentRouters: [ipniRouting("https", "cid.contact", "443"), delegatedContentRouting(delegatedClient)],
+    contentRouters: [ipniRouting('https', 'cid.contact', '443'), delegatedContentRouting(delegatedClient)],
     /**
      * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#configuring-connection-manager
      */
     connectionManager: {
       // Auto connect to discovered peers (limited by ConnectionManager minConnections)
       //  maxConnections: Infinity,
-       minConnections: 1,
-       pollInterval: 2000,
-       autoDial: true,
-       addressSorter: (addressA, addressB) => {
+      minConnections: 1,
+      pollInterval: 2000,
+      autoDial: true,
+      addressSorter: (addressA, addressB) => {
         // Sort addresses by valid browser protocols first
         const addressAString = addressA.multiaddr.toString()
         const addressBString = addressB.multiaddr.toString()
@@ -69,7 +69,7 @@ export async function getHelia (): Promise<Helia> {
           return 1
         }
         return 0
-       },
+      }
       //  maxAddrsToDial: 100,
     },
     /**
@@ -89,14 +89,14 @@ export async function getHelia (): Promise<Helia> {
     peerDiscovery: /** @type {import('libp2p').Libp2pOptions['peerDiscovery']} */([
       bootstrap({
         list: [
-          "/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
-          "/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
-          "/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
-          "/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
-          "/dns4/elastic.dag.house/tcp/443/wss/p2p/bafzbeibhqavlasjc7dvbiopygwncnrtvjd2xmryk5laib7zyjor6kf3avm"
-        ],
-      }),
-    ]),
+          '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
+          '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
+          '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
+          '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt',
+          '/dns4/elastic.dag.house/tcp/443/wss/p2p/bafzbeibhqavlasjc7dvbiopygwncnrtvjd2xmryk5laib7zyjor6kf3avm'
+        ]
+      })
+    ])
   })
 
   libp2p.addEventListener('peer:discovery', (evt) => {

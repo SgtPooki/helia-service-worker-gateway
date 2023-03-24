@@ -50,7 +50,6 @@ const prod = {
       apply (compiler) {
         // allows users to load HTML page via filesystem in browser.
         compiler.hooks.compilation.tap('usePageRelativeLinks', (compilation) => {
-
           HtmlWebpackPlugin.getHooks(compilation).alterAssetTags.tapAsync('usePageRelativeLinks', (data, cb) => {
             // Manipulate the content
             data.assetTags.scripts = data.assetTags.scripts.map((script) => {
@@ -92,14 +91,14 @@ const dev = {
     compress: true,
     // Only update what has changed on hot reload
     hot: true,
-    port: 3000,
+    port: 3000
 
   },
 
   plugins: [
     // Only update what has changed on hot reload
     new webpack.HotModuleReplacementPlugin()
-  ],
+  ]
 }
 
 /**
@@ -146,7 +145,7 @@ const common = {
       minify: false
     }),
     new webpack.DefinePlugin({
-      window: 'globalThis', // attempt to naively replace all "window" keywords with "globalThis"
+      window: 'globalThis' // attempt to naively replace all "window" keywords with "globalThis"
     })
   ],
 
@@ -161,7 +160,7 @@ const common = {
           loader: 'babel-loader',
           options: {
             presets: [
-              "@babel/preset-typescript",
+              '@babel/preset-typescript',
               [
                 '@babel/preset-env',
                 {
@@ -182,13 +181,13 @@ const common = {
       // Fonts and SVGs: Inline files
       { test: /\.(woff(2)?|eot|ttf|otf|svg|)$/, type: 'asset/inline' },
 
-      { test: /\.(css)$/, use: ['style-loader','css-loader'] }
+      { test: /\.(css)$/, use: ['style-loader', 'css-loader'] }
     ]
   },
 
   resolve: {
     modules: [paths.src, 'node_modules'],
-    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx'],
+    extensions: ['.js', '.jsx', '.json', '.ts', '.tsx']
     // alias: {
     //   '@': paths.src
     // }
@@ -204,7 +203,7 @@ const common = {
   },
   experiments: {
     topLevelAwait: true
-  },
+  }
 }
 
 export default (cmd) => {

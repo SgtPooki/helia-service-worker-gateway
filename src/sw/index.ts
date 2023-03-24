@@ -1,9 +1,9 @@
-import { clientsClaim } from 'workbox-core';
+import { clientsClaim } from 'workbox-core'
 
-import { getHelia } from '../get-helia.ts';
-import { ChannelActions } from '../lib/common.ts';
-import { connectAndGetFile } from '../lib/connectAndGetFile.ts';
-import { HeliaServiceWorkerCommsChannel } from '../lib/channel';
+import { getHelia } from '../get-helia.ts'
+import { ChannelActions } from '../lib/common.ts'
+import { connectAndGetFile } from '../lib/connectAndGetFile.ts'
+import { HeliaServiceWorkerCommsChannel } from '../lib/channel'
 
 // localStorage.setItem doesn't work in service workers
 // import debug from 'debug'
@@ -11,15 +11,15 @@ import { HeliaServiceWorkerCommsChannel } from '../lib/channel';
 // debug.enable('libp2p:*:error')
 // debug.enable('libp2p:*:error,-*:trace')
 
-declare var self: ServiceWorkerGlobalScope;
+declare let self: ServiceWorkerGlobalScope
 
-self?.skipWaiting?.();
-clientsClaim();
+void self?.skipWaiting?.()
+clientsClaim()
 
 const channel = new HeliaServiceWorkerCommsChannel('SW')
 
 self.oninstall = async (event) => {
-  console.log(`sw oninstall`);
+  console.log('sw oninstall')
 }
 
 // simple demo of the messageAndWaitForResponse method
@@ -31,20 +31,19 @@ self.oninstall = async (event) => {
 
 channel.onmessagefrom('WINDOW', async (event) => {
   const { data } = event
+  const { localMultiaddr, fileCid } = data.data
   switch (data.action) {
     case ChannelActions.GET_FILE:
-      const { localMultiaddr, fileCid } = data.data
-
       await connectAndGetFile({
         channel,
         localMultiaddr,
         fileCid,
         helia: await getHelia(),
         action: data.action,
-        cb: async ({ fileContent, action }) => console.log('connectAndGetFile cb', fileContent, action)
+        cb: async ({ fileContent, action }) => { console.log('connectAndGetFile cb', fileContent, action) }
       })
 
-      break;
+      break
     // case ChannelActions.DIAL:
     //   try {
     //     const ma = multiaddr(data.data)
@@ -57,12 +56,12 @@ channel.onmessagefrom('WINDOW', async (event) => {
     //   break;
     default:
       // console.warn('SW received unknown action', data.action)
-      break;
+      break
   }
 })
 
 self.onactivate = async (event) => {
-  console.log(`sw onactivate`);
+  console.log('sw onactivate')
 }
 
 console.log('Service Worker Loaded')

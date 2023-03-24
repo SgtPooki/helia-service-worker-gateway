@@ -1,8 +1,4 @@
-import type { ChannelActions } from './common.ts';
-
-export const getChannel = () => {
-  return
-}
+import type { ChannelActions } from './common.ts'
 
 export enum ChannelUsers {
   SW = 'SW',
@@ -27,7 +23,7 @@ type NotSourceUser<T extends ChannelUserValues> = T extends ChannelUsers
   ? (Exclude<ChannelUsers, T> | `${Exclude<ChannelUsers, T>}`)
   : Exclude<ChannelUsers, T> | keyof Omit<typeof ChannelUsers, T>
 
-interface ChannelMessage<Source extends ChannelUserValues, Data = any> {
+interface ChannelMessage<Source extends ChannelUserValues, Data = unknown> {
   source: Source
   target?: ChannelUserValues
   action: ChannelActions | keyof typeof ChannelActions | 'TEST'
@@ -35,53 +31,54 @@ interface ChannelMessage<Source extends ChannelUserValues, Data = any> {
 }
 
 export class HeliaServiceWorkerCommsChannel<S extends ChannelUserValues = 'EMITTER_ONLY'> {
-  channel: BroadcastChannel;
+  channel: BroadcastChannel
   debug = false
-  constructor(public source: S, private channelName = 'helia:sw') {
-    this.log(`HeliaServiceWorkerCommsChannel construction: `, source)
+  constructor (public source: S, private readonly channelName = 'helia:sw') {
+    this.log('HeliaServiceWorkerCommsChannel construction: ', source)
 
     // NOTE: We're supposed to close the channel when we're done with it, but we're not doing that anywhere yet.
-    this.channel = new BroadcastChannel(this.channelName);
+    this.channel = new BroadcastChannel(this.channelName)
     this.channel.onmessageerror = (e) => {
-      this.error(`onmessageerror`, e);
+      this.error('onmessageerror', e)
     }
   }
 
-  log(...args: any[]) {
-    if (!this.debug) return;
-    console.log(`HeliaServiceWorkerCommsChannel(${this.source}): `, ...args);
-  }
-  error(...args: any[]) {
-    if (!this.debug) return;
-    console.error(`HeliaServiceWorkerCommsChannel(${this.source}): `, ...args);
+  log (...args: unknown[]): void {
+    if (!this.debug) return
+    console.log(`HeliaServiceWorkerCommsChannel(${this.source}): `, ...args)
   }
 
-  canListen() {
+  error (...args: unknown[]): void {
+    if (!this.debug) return
+    console.error(`HeliaServiceWorkerCommsChannel(${this.source}): `, ...args)
+  }
+
+  canListen (): boolean {
     return this.source !== 'EMITTER_ONLY'
   }
 
-  onmessage<MType = any>(cb: (e: MessageEvent<ChannelMessage<ChannelUsers, MType>>) => void | Promise<void>) {
+  onmessage<MType = unknown>(cb: (e: MessageEvent<ChannelMessage<ChannelUsers, MType>>) => void | Promise<void>): void {
     if (!this.canListen()) {
       throw new Error('Cannot use onmessage on EMITTER_ONLY channel')
     }
     this.channel.onmessage = cb
   }
 
-  onmessagefrom<Source extends ChannelUserValues, MType = any>(source: Source, cb: (e: MessageEvent<ChannelMessage<Source, MType>>) => void | Promise<void>) {
+  onmessagefrom<Source extends ChannelUserValues, MType = unknown>(source: Source, cb: (e: MessageEvent<ChannelMessage<Source, MType>>) => void | Promise<void>): void {
     if (!this.canListen()) {
       throw new Error('Cannot use onmessagefrom on EMITTER_ONLY channel')
     }
-    const onMsgHandler = async (e: MessageEvent<ChannelMessage<Source, MType>>) => {
-      this.log(`onMsgHandler: `, e)
+    const onMsgHandler = (e: MessageEvent<ChannelMessage<Source, MType>>): void => {
+      this.log('onMsgHandler: ', e)
       if (e.data.source !== source) {
-        return;
+        return
       }
       if (e.data.action === 'PING') {
         this.postMessage({ action: 'PONG', data: e.data.data })
-        return;
+        return
       }
-      await cb(e);
-    };
+      void cb(e)
+    }
     this.channel.addEventListener('message', onMsgHandler)
   }
 
@@ -90,53 +87,52 @@ export class HeliaServiceWorkerCommsChannel<S extends ChannelUserValues = 'EMITT
    * @param source
    * @param cb
    */
-  onmessagefromother<Source extends NotSourceUser<S>, MType = any>(source: Source, cb: (e: MessageEvent<ChannelMessage<Source, MType>>) => void | Promise<void>) {
+  onmessagefromother<Source extends NotSourceUser<S>, MType = unknown>(source: Source, cb: (e: MessageEvent<ChannelMessage<Source, MType>>) => void | Promise<void>): void {
     if (!this.canListen()) {
       throw new Error('Cannot use onmessagefromother on EMITTER_ONLY channel')
     }
-    const onMsgHandler = async (e: MessageEvent<ChannelMessage<Source, MType>>) => {
-      this.log(`onMsgHandler: `, e)
+    const onMsgHandler = (e: MessageEvent<ChannelMessage<Source, MType>>): void => {
+      this.log('onMsgHandler: ', e)
       if (e.data.source !== source) {
-        return;
+        return
       }
       if (e.data.action === 'PING') {
         this.postMessage({ action: 'PONG', data: e.data.data })
-        return;
+        return
       }
-      await cb(e);
+      void cb(e)
 
       // this.channel.removeEventListener('message', onMsgHandler)
-    };
-    // this.onmessage(onMsgHandler as any)
-    // this.channel.onmessage = onMsgHandler
+    }
+
     this.channel.addEventListener('message', onMsgHandler)
   }
 
-  messageAndWaitForResponse<ResponseSource extends NotSourceUser<S>, MSendType = any, MReceiveType = any>(responseSource: ResponseSource, data: Omit<ChannelMessage<S, MSendType>, 'source'>): Promise<MReceiveType> {
+  async messageAndWaitForResponse<ResponseSource extends NotSourceUser<S>, MSendType = unknown, MReceiveType = unknown>(responseSource: ResponseSource, data: Omit<ChannelMessage<S, MSendType>, 'source'>): Promise<MReceiveType> {
     if (!this.canListen()) {
       throw new Error('Cannot use messageAndWaitForResponse on EMITTER_ONLY channel')
     }
-    return new Promise((resolve, reject) => {
-      const onMessage = (e: MessageEvent) => {
+    return await new Promise((resolve, reject) => {
+      const onMessage = (e: MessageEvent): void => {
         if (e.data.source !== responseSource) {
-          return;
+          return
         }
         this.channel.removeEventListener('message', onMessage)
-        resolve(e.data);
+        resolve(e.data)
       }
       // this.channel.onmessage = onMessage;
       this.channel.addEventListener('message', onMessage)
-      this.postMessage(data);
+      this.postMessage(data)
     })
   }
 
-  postMessage<MType>(msg: Omit<ChannelMessage<S, MType>, 'source'>) {
-    this.log(`postMessage: `, msg)
+  postMessage<MType>(msg: Omit<ChannelMessage<S, MType>, 'source'>): void {
+    this.log('postMessage: ', msg)
     const msgObj: ChannelMessage<typeof this.source, MType> = {
       ...msg,
-      source: this.source,
+      source: this.source
     }
 
-    this.channel.postMessage(msgObj);
+    this.channel.postMessage(msgObj)
   }
 }
