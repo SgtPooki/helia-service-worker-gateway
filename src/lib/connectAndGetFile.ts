@@ -17,7 +17,8 @@ interface ConnectAndGetFileOptions {
 
 export async function connectAndGetFile ({ channel, localMultiaddr, fileCid, helia, cb, action }: ConnectAndGetFileOptions): Promise<void> {
   let localConnection: Awaited<ReturnType<Libp2p['dial']>> | undefined
-  if (localMultiaddr != null) {
+  if (localMultiaddr != null && localMultiaddr.trim() !== '') {
+    console.log('localMultiaddr: ', localMultiaddr)
     const ma = multiaddr(localMultiaddr)
     try {
       channel.postMessage({
