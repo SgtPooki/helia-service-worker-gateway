@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
 
-import ipfsLogo from './ipfs-logo.svg'
 import Form from './components/Form.tsx'
 import { ChannelActions, COLORS } from './lib/common.ts'
 import { getHelia } from './get-helia.ts'
@@ -8,6 +7,7 @@ import { connectAndGetFile } from './lib/connectAndGetFile.ts'
 import { HeliaServiceWorkerCommsChannel } from './lib/channel.ts'
 import TerminalOutput from './components/TerminalOutput.tsx'
 import type { OutputLine } from './components/types.ts'
+import Header from './components/Header'
 
 const channel = new HeliaServiceWorkerCommsChannel('WINDOW')
 
@@ -92,11 +92,7 @@ function App (): JSX.Element {
 
   return (
     <>
-      <header className='flex items-center pa3 bg-navy bb bw3 b--aqua'>
-        <a href='https://ipfs.io' title='home'>
-          <img alt='IPFS logo' src={ipfsLogo} style={{ height: 50 }} className='v-top' />
-        </a>
-      </header>
+      <Header />
 
       <main className='pa4-l bg-snow mw7 mv5 center pa4'>
         <h1 className='pa0 f2 ma0 mb4 aqua tc'>Fetch content from IPFS using Helia</h1>
