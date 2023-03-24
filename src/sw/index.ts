@@ -9,7 +9,7 @@ import { type ChannelMessage, HeliaServiceWorkerCommsChannel } from '../lib/chan
 import debug from 'debug'
 // debug.enable('libp2p:websockets,libp2p:webtransport,libp2p:kad-dht,libp2p:dialer*,libp2p:connection-manager')
 // debug.enable('libp2p:*:error')
-debug.enable('libp2p:*:error,libp2p:dialer*,-*:trace')
+debug.enable('libp2p:*:error,libp2p:dialer*,libp2p:webtransport,-*:trace')
 
 declare let self: ServiceWorkerGlobalScope
 

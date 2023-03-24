@@ -2,6 +2,8 @@ import type { multiaddr } from '@multiformats/multiaddr'
 import type { Libp2pInit } from 'libp2p'
 
 export type Multiaddr = ReturnType<typeof multiaddr>
+
+// libp2p does not export components externally... ideally we would do: import type { Components } from 'libp2p'
 export type LibP2pComponents = Parameters<(Required<Libp2pInit['peerRouters']> extends infer K
   ? K extends undefined ? never : K
   : never)[0]>[0]

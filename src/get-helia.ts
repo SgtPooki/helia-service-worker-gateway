@@ -1,107 +1,32 @@
 import { type HeliaInit, createHelia } from 'helia'
 import type { Helia } from '@helia/interface'
-import { type Libp2pOptions, createLibp2p } from 'libp2p'
-import { noise } from '@chainsafe/libp2p-noise'
-import { yamux } from '@chainsafe/libp2p-yamux'
-import { mplex } from '@libp2p/mplex'
-import { webSockets } from '@libp2p/websockets'
-import { webTransport } from '@libp2p/webtransport'
 import { MemoryBlockstore } from 'blockstore-core'
-// import { LevelDatastore } from 'datastore-level'
-import { bootstrap } from '@libp2p/bootstrap'
+import { LevelDatastore } from 'datastore-level'
 import { MemoryDatastore } from 'datastore-core'
-import { delegatedPeerRouting } from '@libp2p/delegated-peer-routing'
-import { create as kuboClient } from 'kubo-rpc-client'
 
-import { ipniRouting } from './ipni-routing.ts'
-import { delegatedContentRouting } from '@libp2p/delegated-content-routing'
+import type { LibP2pComponents } from './types.ts'
+import { getLibp2p } from './getLibp2p.ts'
 
-export async function getHelia (): Promise<Helia> {
+interface GetHeliaOptions {
+  usePersistentDatastore?: boolean
+}
+export async function getHelia ({ usePersistentDatastore }: GetHeliaOptions = {}): Promise<Helia> {
   // the blockstore is where we store the blocks that make up files
   const blockstore: HeliaInit['blockstore'] = new MemoryBlockstore() as unknown as HeliaInit['blockstore']
 
   // application-specific data lives in the datastore
-  const datastore: HeliaInit['datastore'] = new MemoryDatastore() as unknown as HeliaInit['datastore']
-  // use the below datastore if you want to persist your peerId and other data.
-  // const datastore = new LevelDatastore('helia-level-datastore')
-  // await datastore.open()
+  let datastore: LibP2pComponents['datastore']
 
-  // default is to use ipfs.io
-  const delegatedClient = kuboClient({
-    // use default api settings
-    protocol: 'https',
-    port: 443,
-    host: 'node3.delegate.ipfs.io'
-  })
-  // const validTransports = ['/ws', '/wss', '/webtransport']
+  if (usePersistentDatastore === true) {
+    // use the below datastore if you want to persist your peerId and other data.
+    datastore = new LevelDatastore('helia-level-datastore') as unknown as LibP2pComponents['datastore']
+    await datastore.open()
+  } else {
+    datastore = new MemoryDatastore()
+  }
+
   // libp2p is the networking layer that underpins Helia
-  const libp2p = await createLibp2p({
-    datastore: datastore as unknown as Libp2pOptions['datastore'],
-    transports: [
-      webSockets(), webTransport()
-    ],
-    connectionEncryption: [
-      noise()
-    ],
-    streamMuxers: [
-      yamux()
-      // mplex()
-    ],
-    peerRouters: [delegatedPeerRouting(delegatedClient)],
-    // contentRouters: [ipniRouting('https', 'indexstar.prod.cid.contact', '443'), delegatedContentRouting(delegatedClient)],
-    contentRouters: [ipniRouting('https', 'cid.contact', '443')],
-    /**
-     * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#configuring-connection-manager
-     */
-    connectionManager: {
-      // Auto connect to discovered peers (limited by ConnectionManager minConnections)
-      //  maxConnections: Infinity,
-      maxConnections: Infinity,
-      minConnections: 1,
-      pollInterval: 2000
-      // autoDial: true,
-      // addressSorter: (addressA, addressB) => {
-      //   // Sort addresses by valid browser protocols first
-      //   const addressAString = addressA.multiaddr.toString()
-      //   const addressBString = addressB.multiaddr.toString()
-      //   const addressAIsValidBrowserProtocol = validTransports.some((transport) => addressAString.includes(transport))
-      //   const addressBIsValidBrowserProtocol = validTransports.some((transport) => addressBString.includes(transport))
-      //   if (addressAIsValidBrowserProtocol && !addressBIsValidBrowserProtocol) {
-      //     return -1
-      //   }
-      //   if (!addressAIsValidBrowserProtocol && addressBIsValidBrowserProtocol) {
-      //     return 1
-      //   }
-      //   return 0
-      // }
-      //  maxAddrsToDial: 100,
-    },
-    /**
-     * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#configuring-peerstore
-     */
-    peerRouting: { // Peer routing configuration
-      refreshManager: { // Refresh known and connected closest peers
-        enabled: false, // Should find the closest peers.
-        interval: 6e5, // Interval for getting the new for closest peers of 10min
-        bootDelay: 10e3 // Delay for the initial query for closest peers
-      }
-    }
-
-    /**
-     * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#customizing-peer-discovery
-     */
-    // peerDiscovery: /** @type {import('libp2p').Libp2pOptions['peerDiscovery']} */([
-    //   bootstrap({
-    //     list: [
-    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN',
-    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa',
-    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb',
-    //       '/dnsaddr/bootstrap.libp2p.io/p2p/QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt',
-    //       '/dns4/elastic.dag.house/tcp/443/wss/p2p/bafzbeibhqavlasjc7dvbiopygwncnrtvjd2xmryk5laib7zyjor6kf3avm'
-    //     ]
-    //   })
-    // ])
-  })
+  const libp2p = await getLibp2p({ datastore, type: 'ipni' })
 
   libp2p.addEventListener('peer:discovery', (evt) => {
     console.log(`Discovered peer ${evt.detail.id.toString()}`)
@@ -117,7 +42,7 @@ export async function getHelia (): Promise<Helia> {
 
   // create a Helia node
   return await createHelia({
-    datastore,
+    datastore: datastore as unknown as HeliaInit['datastore'],
     blockstore,
     libp2p
   })
