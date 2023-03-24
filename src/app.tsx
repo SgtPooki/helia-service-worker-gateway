@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 
 import ipfsLogo from './ipfs-logo.svg'
-import Form from './form.tsx'
-
+import Form from './components/Form.tsx'
 import { ChannelActions, COLORS } from './lib/common.ts'
 import { getHelia } from './get-helia.ts'
 import { connectAndGetFile } from './lib/connectAndGetFile.ts'
