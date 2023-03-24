@@ -7,9 +7,13 @@ import { webSockets } from '@libp2p/websockets'
 import { webTransport } from '@libp2p/webtransport'
 import { MemoryBlockstore } from 'blockstore-core'
 // import { LevelDatastore } from 'datastore-level'
-import { kadDHT } from '@libp2p/kad-dht'
 import { bootstrap } from '@libp2p/bootstrap'
 import { MemoryDatastore } from 'datastore-core'
+import { delegatedPeerRouting } from '@libp2p/delegated-peer-routing'
+import { create as kuboClient } from "kubo-rpc-client";
+
+import { ipniRouting } from './ipni-routing.ts'
+import { delegatedContentRouting } from '@libp2p/delegated-content-routing'
 
 export async function getHelia (): Promise<Helia> {
   // the blockstore is where we store the blocks that make up files
@@ -17,12 +21,16 @@ export async function getHelia (): Promise<Helia> {
 
   // application-specific data lives in the datastore
   const datastore: HeliaInit['datastore'] = new MemoryDatastore() as unknown as HeliaInit['datastore']
+  // use the below datastore if you want to persist your peerId and other data.
   // const datastore = new LevelDatastore('helia-level-datastore')
   // await datastore.open()
 
-  const dht = kadDHT({
-    kBucketSize: 20,
-    clientMode: true,
+  // default is to use ipfs.io
+  const delegatedClient = kuboClient({
+    // use default api settings
+    protocol: "https",
+    port: 443,
+    host: "node3.delegate.ipfs.io",
   })
   const validTransports = ['/ws', '/wss', '/webtransport']
   // libp2p is the networking layer that underpins Helia
@@ -37,9 +45,8 @@ export async function getHelia (): Promise<Helia> {
     streamMuxers: [
       yamux()
     ],
-    dht,
-    // peerRouters: [delegatedPeerRouting(delegatedClient)],
-    // contentRouters: [ipniRouting("https", "cid.contact", "443")],//delegatedContentRouting(delegatedClient)],
+    peerRouters: [delegatedPeerRouting(delegatedClient)],
+    contentRouters: [ipniRouting("https", "cid.contact", "443"), delegatedContentRouting(delegatedClient)],
     /**
      * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#configuring-connection-manager
      */
@@ -50,6 +57,7 @@ export async function getHelia (): Promise<Helia> {
        pollInterval: 2000,
        autoDial: true,
        addressSorter: (addressA, addressB) => {
+        // Sort addresses by valid browser protocols first
         const addressAString = addressA.multiaddr.toString()
         const addressBString = addressB.multiaddr.toString()
         const addressAIsValidBrowserProtocol = validTransports.some((transport) => addressAString.includes(transport))
@@ -67,7 +75,6 @@ export async function getHelia (): Promise<Helia> {
     /**
      * @see https://github.com/libp2p/js-libp2p/blob/master/doc/CONFIGURATION.md#configuring-peerstore
      */
-
     peerRouting: { // Peer routing configuration
       refreshManager: { // Refresh known and connected closest peers
         enabled: true, // Should find the closest peers.

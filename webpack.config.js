@@ -95,14 +95,11 @@ const dev = {
     port: 3000,
 
   },
-  experiments: {
-    topLevelAwait: true
-  },
 
   plugins: [
     // Only update what has changed on hot reload
     new webpack.HotModuleReplacementPlugin()
-  ]
+  ],
 }
 
 /**
@@ -147,6 +144,9 @@ const common = {
       template: paths.public + '/index.html', // template file
       filename: 'index.html', // output file,
       minify: false
+    }),
+    new webpack.DefinePlugin({
+      window: 'globalThis', // attempt to naively replace all "window" keywords with "globalThis"
     })
   ],
 
@@ -201,6 +201,9 @@ const common = {
   stats: {
     errorDetails: true,
     children: true
+  },
+  experiments: {
+    topLevelAwait: true
   },
 }
 

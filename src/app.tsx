@@ -2,23 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 
 import ipfsLogo from './ipfs-logo.svg'
 import Form from './form.tsx';
-import { HeliaServiceWorkerActions, sendHeliaServiceWorkerMessage } from './lib/swActions.ts';
+import { ChannelActions } from './lib/common.ts';
 import {multiaddr, protocols} from '@multiformats/multiaddr'
 
 import { getHelia } from './get-helia.ts';
 import { connectAndGetFile } from './lib/connectAndGetFile.ts';
+import { HeliaServiceWorkerCommsChannel } from './lib/channel.ts';
+import { COLORS } from './lib/common';
 
-// console.log(`multiaddr: `, multiaddr);
+// for playing around in the console
 (window as any).multiaddr = multiaddr;
-
 (window as any).protocols = protocols;
-
-enum COLORS {
-  default = '#fff',
-  active = '#357edd',
-  success = '#0cb892',
-  error = '#ea5037'
-}
 
 interface OutputLine {
   content: string
@@ -26,13 +20,7 @@ interface OutputLine {
   id: string
 }
 
-window.addEventListener('message', ({data}) => {
-  if (data.source === 'helia') {
-    console.log('received message from helia service worker:')
-    console.log('SW action: ', data.action)
-    console.log('SW data: ', data.data)
-  }
-}, false);
+const channel = new HeliaServiceWorkerCommsChannel('WINDOW')
 
 function App() {
   const [output, setOutput] = useState<OutputLine[]>([]);
@@ -75,27 +63,42 @@ function App() {
       }
 
       if (useServiceWorker) {
-
-        sendHeliaServiceWorkerMessage({ action: HeliaServiceWorkerActions.GET_FILE, data: { fileCid, localMultiaddr } })
+        showStatus('Fetching content using Service worker...', COLORS.active)
+        channel.postMessage({ action: ChannelActions.GET_FILE, data: { fileCid, localMultiaddr } })
       } else {
+        showStatus('Fetching content using main thread (no SW)...', COLORS.active)
         await connectAndGetFile({
+          // need to use a separate channel instance because a BroadcastChannel instance won't listen to its own messages
+          channel: new HeliaServiceWorkerCommsChannel('WINDOW'),
           localMultiaddr,
           fileCid,
           helia: await getHelia(),
-          action: HeliaServiceWorkerActions.GET_FILE,
+          action: ChannelActions.GET_FILE,
           cb: async ({ fileContent, action }) => {
             console.log('non-SW fileContent: ', fileContent);
           }
         })
       }
-
-      // const output = await fetch(`/ipfs/${fileCid}`, { method: 'GET' })
-      // console.log(`output: `, output);
-      // console.log(`output: `, output.text());
     } catch (err) {
       showStatus((err as Error)?.message, COLORS.error)
     }
   }
+
+  useEffect(() => {
+    const onMsg = (event) => {
+      const {data} = event
+      console.log('received message:', data)
+      switch (data.action) {
+        case ChannelActions.SHOW_STATUS:
+          showStatus(`${data.source}: ${data.data.text}`, data.data.color, data.data.id)
+          break;
+        default:
+          console.log(`SW action ${data.action} NOT_IMPLEMENTED yet...`)
+      }
+    }
+    channel.onmessage(onMsg);
+
+  }, [channel])
 
   return (
     <>

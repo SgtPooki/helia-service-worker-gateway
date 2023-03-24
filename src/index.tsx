@@ -7,6 +7,15 @@ import App from './app.tsx'
 const container = document.getElementById('root')
 const root = ReactDOMClient.createRoot(container);
 
+// set up debug logging if you want.
+// import debug from 'debug';
+// debug.enable('libp2p:*:error,-*:trace,libp2p:webtransport')
+
+// simple demo showing messageAndWaitForResponse
+// (async () => {
+//   const result = await channel.messageAndWaitForResponse('SW', {action: 'PING', data: '123'});
+//   console.log(`WINDOW ping result: `, result);
+// })();
 
 root.render(
   <React.StrictMode>

@@ -1,94 +1,51 @@
-// import { BroadcastUpdatePlugin } from 'workbox-broadcast-update';
 import { clientsClaim } from 'workbox-core';
-// import { cleanupOutdatedCaches } from 'workbox-precaching';
-// import { setDefaultHandler } from 'workbox-routing';
-// import { NetworkFirst } from 'workbox-strategies';
-// import type { Libp2p } from 'libp2p';
-import debug from 'debug'
 
-import { multiaddr } from '@multiformats/multiaddr'
 import { getHelia } from '../get-helia.ts';
-// import { getFile } from '../lib/getFile.ts';
-import { HeliaServiceWorkerActions, HeliaServiceWorkerEvent } from '../lib/swActions.ts';
+import { ChannelActions } from '../lib/common.ts';
 import { connectAndGetFile } from '../lib/connectAndGetFile.ts';
+import { HeliaServiceWorkerCommsChannel } from '../lib/channel';
 
 // localStorage.setItem doesn't work in service workers
+// import debug from 'debug'
 // debug.enable('libp2p:websockets,libp2p:webtransport,libp2p:kad-dht,libp2p:dialer*,libp2p:connection-manager')
 // debug.enable('libp2p:*:error')
+// debug.enable('libp2p:*:error,-*:trace')
 
 declare var self: ServiceWorkerGlobalScope;
 
 self?.skipWaiting?.();
 clientsClaim();
 
-// const helia = await getHelia()
-
-async function postMessageToClients (data: any, action: HeliaServiceWorkerActions) {
-  const clients = await self.clients.matchAll();
-  clients.forEach((client) => {
-    client.postMessage({ source: 'helia', action: `${action}_RESPONSE`,  data });
-  });
-}
+const channel = new HeliaServiceWorkerCommsChannel('SW')
 
 self.oninstall = async (event) => {
   console.log(`sw oninstall`);
 }
 
-self.onmessage = async (event: HeliaServiceWorkerEvent) => {
+// simple demo of the messageAndWaitForResponse method
+// (async () => {
+//   const result = await channel.messageAndWaitForResponse('WINDOW', {action: 'PING', data: '123'});
+//   console.log(`SW ping result: `, result);
+
+// })();
+
+channel.onmessagefrom('WINDOW', async (event) => {
   const { data } = event
-  if (data.target !== 'helia') {
-    // skip messages not intended for helia
-    return;
-  }
-  console.log('Helia SW received message', event);
-
   switch (data.action) {
-    case HeliaServiceWorkerActions.GET_FILE:
-      // let dialResponse
-      // if (data.data.localMultiaddr) {
-      //   const ma = multiaddr(data.data.localMultiaddr)
-      //   console.log(`ma: `, ma);
-      //   try {
-      //     const dialResponse = await helia.libp2p.dial(ma)
-      //     console.log(`sw dialResponse: `, dialResponse);
-      //   } catch (e) {
-      //     console.trace(`sw dial error: `, e);
-      //   }
-      // }
-      // const fileContent = await getFile({ fileCid: data.data.fileCid, helia })
-      // await postMessageToClients(fileContent, data.action);
+    case ChannelActions.GET_FILE:
       const { localMultiaddr, fileCid } = data.data
-      // console.log(`localMultiaddr: `, localMultiaddr);
-      // console.log(`fileCid: `, fileCid);
-      // let localConnection: Awaited<ReturnType<Libp2p['dial']>> | undefined
-      // if (localMultiaddr) {
-      //   const ma = multiaddr(localMultiaddr)
-      //   console.log(`ma: `, ma);
-      //   try {
-      //     localConnection = await helia?.libp2p.dial(ma)
-      //     console.log(`sw localConnection: `, localConnection);
-      //   } catch (e) {
-      //     console.trace(`sw dial error: `, e);
-      //   }
-      // }
-
-      // const fileContent = await getFile({ fileCid, helia })
-      // console.log(`fileContent: `, fileContent);
-      // await postMessageToClients(fileContent, data.action);
-      // if (localConnection) {
-      //   localConnection.close
-      // }
 
       await connectAndGetFile({
+        channel,
         localMultiaddr,
         fileCid,
         helia: await getHelia(),
         action: data.action,
-        cb: async ({ fileContent, action }) => postMessageToClients(`fileContent: ${data}`, action)
+        cb: async ({ fileContent, action }) => console.log('connectAndGetFile cb', fileContent, action)
       })
 
       break;
-    // case HeliaServiceWorkerActions.DIAL:
+    // case ChannelActions.DIAL:
     //   try {
     //     const ma = multiaddr(data.data)
     //     console.log(`ma: `, ma);
@@ -99,19 +56,13 @@ self.onmessage = async (event: HeliaServiceWorkerEvent) => {
     //   }
     //   break;
     default:
-      console.error('SW received unknown action', data.action)
+      // console.warn('SW received unknown action', data.action)
       break;
   }
-}
-self.onactivate = async (event) => {
-  // event.waitUntil(async () => {
-  console.log(`sw onactivate`);
-  // await cleanupOutdatedCaches();
-  // await event.waitUntil(self.clients.claim());
-  // })
-}
+})
 
-// cleanupOutdatedCaches();
-// setDefaultHandler(new NetworkFirst());
+self.onactivate = async (event) => {
+  console.log(`sw onactivate`);
+}
 
 console.log('Service Worker Loaded')

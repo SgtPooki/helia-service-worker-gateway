@@ -1,21 +1,34 @@
 import { unixfs } from '@helia/unixfs'
+import type { createHelia } from 'helia'
 import { CID } from 'multiformats/cid'
 
-export const getFile = async ({fileCid, helia}) => {
+import type { ChannelUserValues, HeliaServiceWorkerCommsChannel } from './channel.ts'
+import { COLORS } from './common'
 
-    // if (helia == null) {
-    //   throw new Error('Helia helia is not available')
-    // }
+interface GetFileOptions {
+  fileCid: string,
+  helia: Awaited<ReturnType<typeof createHelia>>,
+  channel: HeliaServiceWorkerCommsChannel<ChannelUserValues>,
+}
 
+export const getFile = async ({fileCid, helia, channel}: GetFileOptions) => {
 
   const peerId = helia.libp2p.peerId
-  console.log(peerId)
-  console.log(`My ID is ${peerId}`)//, COLORS.active, peerId.toString())
+
+  channel.postMessage({ action: 'SHOW_STATUS', data: {
+    text: `My ID is ${peerId}`,
+    color: COLORS.active,
+    id: peerId.toString()
+  }})
 
   const fs = unixfs(helia)
   const cid = CID.parse(fileCid)
 
-  console.log(`Reading UnixFS text file ${cid}...`)//, COLORS.active)
+  channel.postMessage({ action: 'SHOW_STATUS', data: {
+    text: `Reading UnixFS text file ${cid}...`,
+    color: COLORS.active
+  }})
+
   const decoder = new TextDecoder()
   let text = ''
 
@@ -25,8 +38,13 @@ export const getFile = async ({fileCid, helia}) => {
     })
   }
 
-  console.log(`\u2514\u2500 CID: ${cid}`)
-  console.log(`${text}`)//, COLORS.success)
+  channel.postMessage({ action: 'SHOW_STATUS', data: {
+    text: `\u2514\u2500 CID: ${cid}`,
+  }})
+  channel.postMessage({ action: 'SHOW_STATUS', data: {
+    text: `${text}`,
+    color: COLORS.success
+  }})
 
   return text
 }
