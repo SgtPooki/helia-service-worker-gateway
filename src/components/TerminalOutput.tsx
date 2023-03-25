@@ -11,8 +11,6 @@ export default function TerminalOutput ({ output, terminalRef }: TerminalOutputP
   const terminalEl = terminalRef.current
   useEffect(() => {
     if (terminalEl == null) return
-
-    console.log('terminalEl.scrollHeight: ', terminalEl.scrollHeight)
     terminalEl.scroll?.({ top: terminalEl.scrollHeight, behavior: 'smooth' })
   }, [output])
 

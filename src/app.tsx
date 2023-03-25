@@ -7,7 +7,8 @@ import { connectAndGetFile } from './lib/connectAndGetFile.ts'
 import { HeliaServiceWorkerCommsChannel } from './lib/channel.ts'
 import TerminalOutput from './components/TerminalOutput.tsx'
 import type { OutputLine } from './components/types.ts'
-import Header from './components/Header'
+import Header from './components/Header.tsx'
+import type { Libp2pConfigTypes } from './types.ts'
 
 const channel = new HeliaServiceWorkerCommsChannel('WINDOW')
 
@@ -16,6 +17,7 @@ function App (): JSX.Element {
   const [fileCid, setFileCid] = useState(localStorage.getItem('helia-service-worker-gateway.forms.fileCid') ?? '')
   const [localMultiaddr, setLocalMultiaddr] = useState(localStorage.getItem('helia-service-worker-gateway.forms.localMultiaddr') ?? '')
   const [useServiceWorker, setUseServiceWorker] = useState(localStorage.getItem('helia-service-worker-gateway.forms.useServiceWorker') === 'true' ?? false)
+  const [configType, setConfigType] = useState<Libp2pConfigTypes>('ipni')
 
   useEffect(() => {
     localStorage.setItem('helia-service-worker-gateway.forms.fileCid', fileCid)
@@ -51,15 +53,17 @@ function App (): JSX.Element {
 
       if (useServiceWorker) {
         showStatus('Fetching content using Service worker...', COLORS.active)
-        channel.postMessage({ action: ChannelActions.GET_FILE, data: { fileCid, localMultiaddr } })
+        channel.postMessage({ action: ChannelActions.GET_FILE, data: { fileCid, localMultiaddr, libp2pConfigType: configType } })
       } else {
         showStatus('Fetching content using main thread (no SW)...', COLORS.active)
+        const helia = await getHelia({ libp2pConfigType: configType })
+        showStatus(`Got helia with ${configType} libp2p config`)
         await connectAndGetFile({
           // need to use a separate channel instance because a BroadcastChannel instance won't listen to its own messages
           channel: new HeliaServiceWorkerCommsChannel('WINDOW'),
           localMultiaddr,
           fileCid,
-          helia: await getHelia(),
+          helia,
           action: ChannelActions.GET_FILE,
           cb: async ({ fileContent, action }) => {
             console.log('non-SW fileContent: ', fileContent)
@@ -104,6 +108,8 @@ function App (): JSX.Element {
           setLocalMultiaddr={setLocalMultiaddr}
           useServiceWorker={useServiceWorker}
           setUseServiceWorker={setUseServiceWorker}
+          configType={configType}
+          setConfigType={setConfigType}
         />
 
         <h3>Output</h3>

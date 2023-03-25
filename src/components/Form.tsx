@@ -1,6 +1,7 @@
 import React from 'react'
+import Libp2pConfigTypes from './Libp2pConfigTypes'
 
-export default ({ handleSubmit, fileCid, setFileCid, localMultiaddr, setLocalMultiaddr, useServiceWorker, setUseServiceWorker }): JSX.Element => (
+export default ({ handleSubmit, fileCid, setFileCid, localMultiaddr, setLocalMultiaddr, useServiceWorker, setUseServiceWorker, configType, setConfigType }): JSX.Element => (
   <form id='add-file' onSubmit={handleSubmit}>
     <label htmlFor='local-multiaddr' className='f5 ma0 pb2 aqua fw4 db'>Local multiaddr (e.g. webtransport multiaddr for your kubo node)</label>
     <input
@@ -30,6 +31,7 @@ export default ({ handleSubmit, fileCid, setFileCid, localMultiaddr, setLocalMul
         checked={useServiceWorker} onChange={(e) => setUseServiceWorker(e.target.checked)}
       />
     </label>
+    <Libp2pConfigTypes configType={configType} setConfigType={setConfigType}/>
 
     <button
       className='button-reset pv3 tc bn bg-animate bg-black-80 hover-bg-aqua white pointer w-100'

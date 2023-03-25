@@ -6,19 +6,18 @@ import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { mplex } from '@libp2p/mplex'
 
-import type { LibP2pComponents } from './types.ts'
+import type { LibP2pComponents, Libp2pConfigTypes } from './types.ts'
 import { getIpniLibp2pConfig } from './libp2pConfigs/getIpniLibp2pConfig.ts'
 import { getDhtLibp2pConfig } from './libp2pConfigs/getDhtLibp2pConfig.ts'
 
 interface GetLibP2pOptions {
   datastore: LibP2pComponents['datastore']
-  type: 'ipni' | 'reframe' | 'dht'
+  type: Libp2pConfigTypes
 }
 
 const typeFnMap: Record<GetLibP2pOptions['type'], () => Libp2pOptions> = {
   ipni: getIpniLibp2pConfig,
-  dht: getDhtLibp2pConfig,
-  reframe: () => { throw new Error('Not implemented') }
+  dht: getDhtLibp2pConfig
 }
 
 export async function getLibp2p ({ datastore, type }: GetLibP2pOptions): Promise<Libp2p> {
