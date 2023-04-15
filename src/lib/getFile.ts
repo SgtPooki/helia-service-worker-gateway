@@ -37,7 +37,11 @@ export const getFile = async ({ fileCid, helia, channel }: GetFileOptions): Prom
   const decoder = new TextDecoder()
   let text = ''
 
-  for await (const chunk of fs.cat(cid)) {
+  for await (const chunk of fs.cat(cid, {
+    onProgress: (evt) => {
+      console.info(evt.type, evt.detail)
+    }
+  })) {
     text += decoder.decode(chunk, {
       stream: true
     })
