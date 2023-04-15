@@ -6,12 +6,13 @@ import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { mplex } from '@libp2p/mplex'
 
-import type { LibP2pComponents, Libp2pConfigTypes } from './types.ts'
+import type { Libp2pConfigTypes } from './types.ts'
 import { getIpniLibp2pConfig } from './libp2pConfigs/getIpniLibp2pConfig.ts'
 import { getDhtLibp2pConfig } from './libp2pConfigs/getDhtLibp2pConfig.ts'
+import type { Datastore } from 'interface-datastore'
 
 interface GetLibP2pOptions {
-  datastore: LibP2pComponents['datastore']
+  datastore: Datastore
   type: Libp2pConfigTypes
 }
 

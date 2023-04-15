@@ -4,8 +4,9 @@ import { MemoryBlockstore } from 'blockstore-core'
 import { LevelDatastore } from 'datastore-level'
 import { MemoryDatastore } from 'datastore-core'
 
-import type { LibP2pComponents, Libp2pConfigTypes } from './types.ts'
+import type { Libp2pConfigTypes } from './types.ts'
 import { getLibp2p } from './getLibp2p.ts'
+import type { Datastore } from 'interface-datastore'
 
 interface GetHeliaOptions {
   usePersistentDatastore?: boolean
@@ -18,15 +19,16 @@ const defaultOptions: GetHeliaOptions = {
 
 export async function getHelia ({ usePersistentDatastore, libp2pConfigType }: GetHeliaOptions = defaultOptions): Promise<Helia> {
   // the blockstore is where we store the blocks that make up files
-  const blockstore: HeliaInit['blockstore'] = new MemoryBlockstore() as unknown as HeliaInit['blockstore']
+  const blockstore = new MemoryBlockstore()
 
   // application-specific data lives in the datastore
-  let datastore: LibP2pComponents['datastore']
+  let datastore: Datastore
 
   if (usePersistentDatastore === true) {
     // use the below datastore if you want to persist your peerId and other data.
-    datastore = new LevelDatastore('helia-level-datastore') as unknown as LibP2pComponents['datastore']
-    await datastore.open()
+    const level = new LevelDatastore('helia-level-datastore')
+    await level.open()
+    datastore = level
   } else {
     datastore = new MemoryDatastore()
   }
